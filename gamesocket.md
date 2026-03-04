@@ -55,6 +55,7 @@
 
 #### TileType
 - `PROPERTY` : 땅/건물 칸
+- `EVENT` : 이벤트 칸
 - `CHANCE` : 찬스 칸
 - `MOVE_TO_ISLAND` : 섬으로 이동 칸
 - `ISLAND` : 섬 칸
