@@ -1,17 +1,28 @@
-# Socket.io 실시간 이벤트 명세서 (턴제 부루마블형 보드게임)
+
+## 0. 구현 가이드(필수 규칙)
+
+1) 서버는 게임 단위로 액션을 **순차 처리**한다(큐/락 권장).
+2) 클라이언트는 `revision` 기준으로 **중복/역순 패킷을 무시**한다.
+3) 입력 UX
+	- `game:ack`에서 `ok=false`면 즉시 UI 에러 표시
+	- 내 턴이 아니거나 phase가 맞지 않으면 서버가 거절(`NOT_YOUR_TURN`, `INVALID_PHASE`)
+4) 재접속 시 클라이언트는 `game:sync`를 호출하고 `snapshot`/누락 patch로 복구한다.
+
+
 
 ## 1. 전송 방식 / 룸(Room) 규칙
 
 ### 1.1 Socket.io 이벤트 이름
-- 클라이언트 -> 서버
-	- `game:action` : 게임 행위(의도) 요청
-	- `game:sync` : 재접속/동기화 요청
-	- `game:prompt_response` : 서버가 보낸 개인 선택(prompt)에 대한 응답
-- 서버 -> 클라이언트
-	- `game:ack` : 요청 처리 결과(요청자에게만)
-	- `game:patch` : 상태 변경(게임 룸 전체 브로드캐스트)
-	- `game:prompt` : 특정 플레이어에게만 필요한 선택 요청(개인 룸)
-	- `game:error` : 치명 오류/강제 동기화 필요 등(선택)
+
+#### 클라이언트 -> 서버
+- `game:action` : 게임 행위(의도) 요청
+- `game:sync` : 재접속/동기화 요청
+- `game:prompt_response` : 서버가 보낸 개인 선택(prompt)에 대한 응답
+#### 서버 -> 클라이언트
+- `game:ack` : 요청 처리 결과(요청자에게만)
+- `game:patch` : 상태 변경(게임 룸 전체 브로드캐스트)
+- `game:prompt` : 특정 플레이어에게만 필요한 선택 요청(개인 룸)
+- `game:error` : 치명 오류/강제 동기화 필요 등(선택)
 
 ### 1.2 룸(Room)
 - 게임 룸: `game:{gameId}`
@@ -426,14 +437,3 @@ op:
   }
 }
 ```
-
----
-
-## 6. 구현 가이드(필수 규칙)
-
-1) 서버는 게임 단위로 액션을 **순차 처리**한다(큐/락 권장).
-2) 클라이언트는 `revision` 기준으로 **중복/역순 패킷을 무시**한다.
-3) 입력 UX
-- `game:ack`에서 `ok=false`면 즉시 UI 에러 표시
-- 내 턴이 아니거나 phase가 맞지 않으면 서버가 거절(`NOT_YOUR_TURN`, `INVALID_PHASE`)
-4) 재접속 시 클라이언트는 `game:sync`를 호출하고 `snapshot`/누락 patch로 복구한다.
