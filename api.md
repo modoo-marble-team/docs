@@ -27,8 +27,7 @@ REST / Socket Ack 공통으로 아래 형식을 사용한다.
 }
 ```
 
-## 3) REST API (유지 대상)
-게임 액션 REST는 제거(또는 deprecated)하고, 아래만 유지한다.
+## 3) REST API
 
 | ID | Method | Path | Auth | 설명 |
 |---|---|---|---|---|
