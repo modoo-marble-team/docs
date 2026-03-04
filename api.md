@@ -22,7 +22,7 @@
 ### Auth
 | ID | Method | Path | 설명 |
 |---|---|---|---|
-| AUTH-001 | POST | /auth/kakao/callback | 카카오 인가코드를 받아 액세스 토큰과 교환 후 유저 정보를 조회한다. |
+| [AUTH-001](jsons/AUTH-001.md) | POST | /auth/kakao/callback | 카카오 인가코드를 받아 액세스 토큰과 교환 후 유저 정보를 조회한다. |
 | AUTH-002 | POST | /auth/guest | 로그인 없이 게스트 세션 토큰을 발급한다. |
 
 ### User
