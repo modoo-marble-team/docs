@@ -1,7 +1,7 @@
 # API / WebSocket 명세서 (gamesocket 기준 정렬본)
 
 ## 1. 문서 목적
-- 본 문서는 `docs/gamesocket.md`를 게임 영역의 단일 기준으로 사용한다.
+- 본 문서는 [`docs/gamesocket.md`](gamesocket.md)를 게임 영역의 단일 기준으로 사용한다.
 - 기존 프론트 구현을 최대한 유지하기 위해 REST는 로비/대기방/프레즌스 중심으로 유지한다.
 - 게임 로직은 모두 `game:*` 소켓 이벤트로 처리한다.
 
