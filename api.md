@@ -28,11 +28,13 @@
 ### User
 | ID | Method | Path | 설명 |
 |---|---|---|---|
-| AUTH-003 | PATCH | /users/me/nickname | 신규 가입 후 닉네임을 설정한다. |
-| USER-001 | GET | /users/me | 로그인한 유저의 프로필과 전적(승/패/총 게임 수)을 반환한다. |
+| USER-001 | GET | /users/me | 로그인한 유저의 닉네임과 프로필을 반환한다. |
+| USER-002 | GET | /users/me/detail | 로그인한 유저의 프로필과 전적(승/패/총 게임 수)을 반환한다. |
+| USER-003 | PATCH | /users/me/nickname | 신규 가입 후 닉네임을 설정한다. |
 
 ### Lobby
 | ID | Method | Path | 설명 |
 |---|---|---|---|
 | LOBBY-001 | GET | /rooms | 로비 방 목록을 반환한다. |
 | LOBBY-002 | POST | /rooms | 새 방을 생성한다. 비밀방 시 `password` 필수(숫자 4자리). |
+| LOBBY-003 | POST | /rooms/{id}/join | 방에 참가한다. |
