@@ -1,7 +1,7 @@
 
 
 # 문서
-- [API 명세서](api.md)
+- [API 명세서(WIP)](api.md)
 - [ERD](erd.md)
 
 - [게임 소켓 명세서](gamesocket.md)
