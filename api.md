@@ -1,11 +1,14 @@
-# API / WebSocket 명세서 (gamesocket 기준 정렬본)
+# API / WebSocket 명세서
 
-## 1. 문서 목적
-- 본 문서는 [`docs/gamesocket.md`](gamesocket.md)를 게임 영역의 단일 기준으로 사용한다.
-- 기존 프론트 구현을 최대한 유지하기 위해 REST는 로비/대기방/프레즌스 중심으로 유지한다.
-- 게임 로직은 모두 `game:*` 소켓 이벤트로 처리한다.
+## 범위
+- 게임 본플레이 계약은 `docs/gamesocket.md`를 단일 기준으로 사용한다.
+- 이 문서는 로비, 대기방, 프레즌스, DM의 REST/Socket 계약을 정의한다.
+- 문서 간 충돌 시 우선순위:
+  1. `docs/gamesocket.md`
+  2. `docs/api.md`
+  3. 레거시 구현 동작
 
-## 2. 공통 규칙
+## 공통
 | 항목 | 값 |
 |---|---|
 | REST Base URL | `/api` |
@@ -14,173 +17,168 @@
 | Socket 인증 | 연결 전 `socket.auth = { token: accessToken }` |
 | Content-Type | `application/json` |
 | 시간 포맷 | ISO-8601 UTC |
-| 금액 단위 | 정수(프로젝트 합의 단위 고정, 프론트/백엔드 동일 적용) |
 
-### 공통 에러 포맷
+### 공통 에러 포맷(전체 API)
 ```json
 {
   "code": "STRING_ERROR_CODE",
-  "message": "사용자 표시용 메시지",
-  "detail": "옵션"
+  "message": "사용자 노출 메시지",
+  "detail": "선택 상세 정보"
 }
 ```
 
-## 3. REST API (유지 범위)
+## REST API
+
+## 로비 / 대기방 / 프레즌스
 | ID | Method | Path | Auth | 설명 |
 |---|---|---|---|---|
 | SYS-001 | GET | `/health` | N | 헬스체크 |
-| LOBBY-001 | GET | `/rooms` | N | 로비 방 목록 스냅샷 |
+| LOBBY-001 | GET | `/rooms` | N | 로비 방 목록 스냅샷 조회 |
 | ROOM-001 | POST | `/rooms` | Y | 방 생성 |
 | ROOM-002 | POST | `/rooms/{roomId}/join` | Y | 방 입장 |
 | ROOM-003 | POST | `/rooms/{roomId}/leave` | Y | 방 퇴장 |
 | ROOM-004 | PATCH | `/rooms/{roomId}/ready` | Y | 준비 상태 변경 |
-| ROOM-005 | POST | `/rooms/{roomId}/start` | Y (host) | 게임 시작 |
+| ROOM-005 | POST | `/rooms/{roomId}/start` | Y(host) | 게임 시작 |
 | PRESENCE-001 | GET | `/users/online` | Y | 온라인 유저 초기 스냅샷 |
 
-### `GET /rooms` query
+### GET `/rooms` query
 | 이름 | 타입 | 필수 | 설명 |
 |---|---|---|---|
 | `status` | `waiting \| playing` | N | 상태 필터 |
 | `exclude_private` | boolean | N | 비공개 방 제외 |
 | `keyword` | string | N | 방 제목 검색 |
 
-## 4. WebSocket 명세
+### ROOM-002: POST `/rooms/{roomId}/join` 응답 계약
+#### 필수 필드
+| 필드 | 타입 | 비고 |
+|---|---|---|
+| `room_id` | string | 입장한 방 ID |
+| `title` | string | 방 제목 |
+| `status` | `waiting \| playing` | 방 상태 |
+| `max_players` | number | 최대 인원 |
+| `is_private` | boolean | 비공개 여부 |
+| `players` | array | 현재 방 참가자 목록 |
+| `chat_messages` | array | 채팅 히스토리(빈 배열 허용, 필드 자체는 필수) |
 
-## 4.1 로비/대기방/채팅
-| Event | 방향 | Payload | 설명 |
+#### `players[]` 필수 필드
+| 필드 | 타입 |
+|---|---|
+| `id` | string |
+| `nickname` | string |
+| `is_ready` | boolean |
+| `is_host` | boolean |
+
+#### `chat_messages[]` 필수 필드
+| 필드 | 타입 |
+|---|---|
+| `id` | string |
+| `sender_id` | string |
+| `sender_nickname` | string |
+| `message` | string |
+| `sent_at` | string (ISO-8601 UTC) |
+| `type` | `talk` |
+
+#### 예시
+```json
+{
+  "room_id": "room-7",
+  "title": "즐거운 게임 한판!",
+  "status": "waiting",
+  "max_players": 4,
+  "is_private": false,
+  "players": [
+    { "id": "u-1", "nickname": "홍길동", "is_ready": false, "is_host": true }
+  ],
+  "chat_messages": []
+}
+```
+
+### ROOM-003 퇴장 시퀀스 계약
+- 클라이언트는 `POST /rooms/{roomId}/leave`를 먼저 호출해야 한다.
+- REST 퇴장 성공 시, 클라이언트는 실시간 분리를 위해 `leave_room`을 즉시 emit하는 것을 권장한다.
+- REST-only도 fallback으로 허용한다(서버는 REST 결과만으로 퇴장 상태를 확정 처리해야 함).
+- 권장 순서:
+  1. `POST /rooms/{roomId}/leave`
+  2. 성공 시 `{ room_id }` payload로 `leave_room` emit
+  3. 클라이언트 라우팅/상태 정리
+
+## DM API (신규)
+| ID | Method | Path | Auth | 설명 |
+|---|---|---|---|---|
+| DM-001 | GET | `/dm/rooms` | Y | DM 방 목록 + 마지막 메시지 + unread_count 조회 |
+| DM-002 | GET | `/dm/rooms/{target_user_id}/messages` | Y | 메시지 히스토리 조회(커서 페이지네이션) |
+| DM-003 | PATCH | `/dm/rooms/{target_user_id}/read` | Y | 읽음 처리(`unread_count=0`) |
+
+### DM-002 query
+| 이름 | 타입 | 필수 | 기본값 | 비고 |
+|---|---|---|---|---|
+| `cursor` | string | N | null | 이전 페이지 앵커 |
+| `limit` | number | N | 30 | `1..100` |
+
+## WebSocket API
+
+## 로비 / 대기방
+| 이벤트 | 방향 | Payload | 설명 |
 |---|---|---|---|
 | `lobby_updated` | Server -> Client | `{ action, room }` | 로비 목록 변경 알림 |
 | `enter_room` | Client -> Server | `{ room_id }` | 대기방 소켓 입장 |
 | `leave_room` | Client -> Server | `{ room_id }` | 대기방 소켓 퇴장 |
 | `player_ready` | Server -> Client | `{ player_id, is_ready, all_ready }` | 준비 상태 변경 |
 | `host_changed` | Server -> Client | `{ new_host_id, new_host_nickname }` | 방장 변경 |
-| `send_chat` | Client -> Server | `{ room_id, message }` | 채팅 전송 |
-| `chat` | Server -> Client | `{ room_id, sender_id, sender_nickname, message, sent_at }` | 채팅 수신 |
-| `game_start` | Server -> Client | `{ game_id }` | 게임 시작 알림(진행 상태는 `game:sync`/`game:patch`로 수신) |
+| `send_chat` | Client -> Server | `{ room_id, message }` | 대기방 채팅 전송 |
+| `chat` | Server -> Client | `{ room_id, sender_id, sender_nickname, message, sent_at }` | 대기방 채팅 수신 |
+| `game_start` | Server -> Client | `{ game_id, room_id, game_state? }` | 게임 시작 신호 |
 
-## 4.2 프레즌스/DM
-| Event | 방향 | Payload | 설명 |
+### `game_start` payload 계약(확정)
+- 이벤트명: `game_start` 유지
+- 필수: `game_id`(string), `room_id`(string)
+- 선택: `game_state`(object)
+
+```json
+{
+  "game_id": "g-123",
+  "room_id": "room-7"
+}
+```
+
+## 프레즌스
+| 이벤트 | 방향 | Payload | 설명 |
 |---|---|---|---|
-| `online_users` | Server -> Client | `{ users: [{ id, nickname, status }] }` | 온라인 유저 갱신 |
-| `dm_send` | Client -> Server | `{ receiver_id, message }` | DM 전송 |
-| `dm_receive` | Server -> Client | `{ sender_id, sender_nickname, message, sent_at }` | DM 수신 |
+| `online_users` | Server -> Client | `{ users: [{ id, nickname, status }] }` | 온라인 유저 스냅샷/변경 이벤트 |
 
-## 4.3 게임 (단일 기준: `docs/gamesocket.md`)
+### `online_users` 초기 정책(확정)
+- 소켓 연결 직후 초기 스냅샷 emit은 보장하지 않는다.
+- 클라이언트는 반드시 `GET /users/online`으로 bootstrap 해야 한다.
+- bootstrap 이후에는 `online_users` 소켓 이벤트로 실시간 반영한다.
+- 서버 초기 emit은 최적화로 제공 가능하나, 클라이언트가 의존하면 안 된다.
 
-### 클라이언트 -> 서버
-| Event | 설명 |
-|---|---|
-| `game:action` | 게임 행위(의도) 요청 |
-| `game:sync` | 재접속/초기 진입 동기화 요청 |
-| `game:prompt_response` | 개인 선택 프롬프트 응답 |
+## DM Socket
+| 이벤트 | 방향 | Payload | 설명 |
+|---|---|---|---|
+| `dm_send` | Client -> Server | `{ receiver_id, message, client_message_id? }` | DM 전송 |
+| `dm_receive` | Server -> Client | `{ message_id, sender_id, sender_nickname, message, sent_at }` | DM 수신 |
 
-### 서버 -> 클라이언트
-| Event | 설명 |
-|---|---|
-| `game:ack` | 요청 처리 결과(요청자에게만) |
-| `game:patch` | 상태 변경 전파(게임 룸 브로드캐스트) |
-| `game:prompt` | 개인 선택 요청(개인 룸) |
-| `game:error` | 치명 오류/강제 동기화 요청(선택) |
+### DM 멱등성(idempotency)
+- `dm_receive.message_id`는 필수다.
+- 클라이언트는 `message_id` 기준으로 중복 삽입을 방지해야 한다.
+- 서버는 저장 성공 후에만 `dm_receive`를 발행한다.
 
-### 룸 규칙
-- 게임 룸: `game:{gameId}`
-- 개인 룸: `user:{userId}`
+## 게임 Socket
+- 게임 본플레이는 `docs/gamesocket.md`를 따른다.
+  - Client -> Server: `game:action`, `game:sync`, `game:prompt_response`
+  - Server -> Client: `game:ack`, `game:patch`, `game:prompt`, `game:error`
 
-### `game:action` envelope
-```json
-{
-  "gameId": "g1",
-  "actionId": "uuid-123",
-  "type": "ROLL_DICE",
-  "payload": {}
-}
-```
+## DM 정책
+- 저장: 영속 저장
+- TTL: 365일
+- 삭제 모델: 사용자 뷰 기준 소프트 삭제(hide)
+- 하드 삭제: TTL 만료 배치 또는 운영 정책에 따라 수행
+- unread_count 단일 진실원천: 서버
 
-### ActionType
-- `ROLL_DICE`
-- `BUY_PROPERTY`
-- `SELL_PROPERTY`
-- `END_TURN`
-
-### `game:sync`
-```json
-{
-  "gameId": "g1",
-  "knownRevision": 40
-}
-```
-
-### `game:prompt_response`
-```json
-{
-  "gameId": "g1",
-  "promptId": "pr-9",
-  "choice": "BUY",
-  "payload": {}
-}
-```
-
-### `game:ack` 예시
-```json
-{
-  "gameId": "g1",
-  "actionId": "uuid-1",
-  "ok": true,
-  "error": null,
-  "revision": 42
-}
-```
-
-```json
-{
-  "gameId": "g1",
-  "actionId": "uuid-2",
-  "ok": false,
-  "error": {
-    "code": "INSUFFICIENT_FUNDS",
-    "message": "잔액이 부족합니다."
-  },
-  "revision": 42
-}
-```
-
-### `game:patch` envelope
-```json
-{
-  "gameId": "g1",
-  "revision": 42,
-  "turn": 10,
-  "events": [],
-  "patch": [],
-  "snapshot": null
-}
-```
-
-### patch operation
-- `set`: 값 설정
-- `inc`: 숫자 증감
-- `push`: 배열 추가
-- `remove`: 배열/키 삭제
-
-## 5. 상태 권위 및 적용 규칙
-- 서버 authoritative: 주사위/이동/통행료/소유권/건설 레벨 확정은 서버만 수행한다.
-- 클라이언트는 의도(intent)만 보낸다.
-- 클라이언트는 `revision` 기준으로 중복/역순 patch를 무시한다.
-- `game:patch.snapshot` 존재 시 로컬 상태를 snapshot으로 교체한다.
-- 액션 실패는 `game:ack.ok=false`를 기준으로 즉시 UI 에러를 표시한다.
-
-## 6. 데이터 타입 기준 (gamesocket 합의)
-- 식별자/턴/revision/타일/레벨/금액 관련 값은 number 기준 사용
-- 빌딩 레벨: `0..7`
-- 주요 enum: `ActionType`, `ServerEventType`, `TileType`, `PlayerState`는 `docs/gamesocket.md` 정의를 따른다.
-
-## 7. 호환성 정책
-- 아래 레거시 게임 이벤트/REST는 신규 구현 기준에서 사용하지 않는다.
-  - 레거시 이벤트: `roll_dice`, `game_state`, `turn_start`, `player_moved`, `tile_purchased`, `toll_paid` ...
-  - 레거시 REST: `/game/{roomId}/buy`, `/game/{roomId}/build`, `/game/{roomId}/sell`, `/game/{roomId}/state`
-- 다만 마이그레이션 기간에는 서버에서 임시 어댑터를 둘 수 있다.
-- 기준 문서 충돌 시 우선순위:
-  1. `docs/gamesocket.md`
-  2. 본 문서(`docs/api.md`)
-  3. 레거시 구현
+## DM 에러 코드
+- `DM_TARGET_NOT_FOUND`
+- `DM_NOT_ALLOWED_IN_PLAYING`
+- `DM_ROOM_NOT_FOUND`
+- `DM_MESSAGE_TOO_LONG`
+- `DM_RATE_LIMITED`
 
