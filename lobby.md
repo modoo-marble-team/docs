@@ -121,3 +121,21 @@
 - 클라이언트는 반드시 `GET /users/online`으로 bootstrap 한다.
 - bootstrap 이후 `online_users` 소켓 이벤트로 실시간 반영한다.
 - 서버 초기 emit은 최적화로 제공 가능하나, 클라이언트는 의존하면 안 된다.
+
+## 에러 코드 표준 (ROOM/PRESENCE)
+- REST 응답과 Socket 거절 응답(ack/error) 모두 동일 코드 체계를 사용한다.
+- Socket의 경우 아래 HTTP status는 등가 의미(semantic mapping)로 해석한다.
+
+| 코드 | HTTP status | 적용 채널 | 설명 |
+|---|---|---|---|
+| `ROOM_NOT_FOUND` | 404 | REST/Socket | 대상 방이 없음 |
+| `ROOM_FULL` | 409 | REST/Socket | 방 정원 초과 |
+| `ROOM_PASSWORD_MISMATCH` | 403 | REST/Socket | 비밀번호 불일치 |
+| `ROOM_PASSWORD_REQUIRED` | 400 | REST/Socket | 비공개 방 비밀번호 누락 |
+| `ALREADY_JOINED_ROOM` | 409 | REST/Socket | 이미 입장한 방 |
+| `NOT_ROOM_MEMBER` | 403 | REST/Socket | 방 멤버가 아님 |
+| `ALREADY_LEFT_ROOM` | 409 | REST/Socket | 이미 퇴장한 상태 |
+| `ONLY_HOST_CAN_START` | 403 | REST/Socket | 방장만 시작 가능 |
+| `ROOM_NOT_READY_TO_START` | 409 | REST/Socket | 시작 조건 미충족(인원/준비 상태 등) |
+| `AUTH_REQUIRED` | 401 | REST/Socket | 인증 필요 |
+| `RATE_LIMITED` | 429 | REST/Socket | 요청 빈도 제한 |
