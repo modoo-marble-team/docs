@@ -21,6 +21,7 @@
 | Socket 인증 | 연결 전 `socket.auth = { token: accessToken }` |
 | Content-Type | `application/json` |
 | 시간 포맷 | ISO-8601 UTC |
+| 금액 단위 | 전 구간 **만원 단위 정수** |
 
 ### 공통 에러 포맷
 ```json
@@ -34,4 +35,4 @@
 ## 상세 문서
 - 로비/대기방/프레즌스: `docs/lobby.md`
 - DM 실시간 전용(무영속): `docs/dm.md`
-- 게임 본플레이 소켓: `docs/gamesocket.md`
+- 게임 본플레이 소켓: `docs/gamesocket.md` (섹션 `6. FE/BE 계약 고정안 (2026-03-10)` 참고)
