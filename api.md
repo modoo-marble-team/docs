@@ -329,6 +329,53 @@
 | `403` | 없음 | `{"detail":"Guest not allowed"}` |
 | `404` | 없음 | `{"detail":"User not found"}` |
 
+### `GET /api/users/me/context`
+
+- 목적: 현재 사용자가 어느 방/게임에 참가 중인지와 앱 재진입 시 어디로 복귀해야 하는지 조회
+- 인증: Access token 필요
+- 권한: 게스트 포함 사용 가능
+- 요청 바디: 없음
+
+성공 응답
+
+```json
+{
+  "room_id": "room-1234abcd",
+  "room_title": "친구방",
+  "room_status": "playing",
+  "game_id": "17",
+  "presence_status": "playing",
+  "resume_target": "game"
+}
+```
+
+필드 설명
+
+- `room_id`: 현재 참가 중인 방 ID. 없으면 `null`
+- `room_title`: 현재 방 제목. 방을 찾을 수 없으면 `null`
+- `room_status`: 현재 방 상태. `waiting` 또는 `playing`, 없으면 `null`
+- `game_id`: 현재 진행 중인 게임 ID. 없으면 `null`
+- `presence_status`: presence 저장값. 보통 `lobby`, `in_room`, `playing` 중 하나
+- `resume_target`: 프론트가 기본 복귀 대상으로 써야 하는 위치
+
+`resume_target` 값
+
+- `lobby`: 참가 중인 방/게임 없음
+- `room`: 방에는 참가 중이지만 진행 중 게임은 없음
+- `game`: 진행 중 게임이 있음
+
+구현 메모
+
+- `room_id`는 현재 방 매핑 또는 진행 중 게임 상태에서 복구될 수 있다.
+- `game_id`는 활성 게임 매핑, 레거시 게임 매핑, 방의 `game_id` 중 현재 값으로 계산된다.
+- 게임 종료 후에는 방이 유지되므로 보통 `room_status=waiting`, `game_id=null`, `resume_target=room`으로 내려간다.
+
+에러
+
+| HTTP | code | Body |
+|---|---|---|
+| `401` | 없음 | 공통 auth failure |
+
 ### `PATCH /api/users/me/nickname`
 
 - 목적: 닉네임 변경

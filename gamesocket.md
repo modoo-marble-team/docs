@@ -45,6 +45,16 @@ const socket = io(SOCKET_URL, {
 - 현재 게임 금액은 `만원 단위 정수`
 - 예: `500` = 500만원
 
+### AFK Timeout Rule
+
+- 각 턴에는 현재 `30초` 타임아웃이 있다.
+- 타임아웃 시 서버가 턴을 자동 진행한다.
+- `WAIT_ROLL` 상태에서 응답이 없으면 서버가 주사위를 자동으로 굴린다.
+- 구매/건설/인수처럼 스킵 가능한 prompt는 자동으로 `SKIP` 한다.
+- 통행료처럼 필수 처리 prompt는 서버가 강제로 처리한다.
+- 여행처럼 추가 payload가 필요한 선택 prompt는 서버가 유효한 선택지 중 하나를 랜덤으로 골라 처리한다.
+- 자동 처리 후 추가 prompt가 생기면 같은 규칙으로 연쇄 처리하고, 더 이상 prompt가 없으면 턴을 종료한다.
+
 ### Identifier Type
 
 실구현은 ID 타입이 완전히 단일하지 않다.
@@ -801,7 +811,7 @@ disconnect timeout 종료
 {
   "type": "PLAYER_DISCONNECTED",
   "playerId": 2,
-  "timeoutSeconds": 30
+  "timeoutSeconds": 60
 }
 ```
 
@@ -824,7 +834,7 @@ disconnect timeout 종료
 - active game 참가자이고 파산 상태가 아니면:
   - disconnect 시각을 Redis에 기록
   - `PLAYER_DISCONNECTED` 이벤트를 `game:{gameId}` room에 브로드캐스트
-  - 30초 유예 후에도 복귀하지 않으면 강제 파산 처리
+  - 60초 유예 후에도 복귀하지 않으면 강제 파산 처리
 
 ### Reconnect
 
@@ -847,6 +857,10 @@ disconnect timeout 종료
 - `buildingLevels = {}`
 - 현재 턴 플레이어였다면 다음 플레이어로 강제 턴 진행
 - 생존 플레이어가 1명 이하가 되면 즉시 `GAME_OVER(reason=disconnect_timeout)`
+- 게임이 종료되면 room 자체는 유지된다.
+- 종료 직후 room은 `waiting` 상태로 복귀하고 `game_id` 는 비워진다.
+- 연결 중인 참가자의 presence는 `in_room` 으로 복귀한다.
+- game state / patch log / active game 매핑은 정리된다.
 
 ---
 
