@@ -801,6 +801,32 @@
 
 ---
 
+종료된 게임 스냅샷에서는 아래 필드가 함께 보장된다.
+
+- `phase = "GAME_OVER"`
+- `isGameOver = true`
+- `winnerId = "<승자 playerId>"` 또는 승자 없음이면 `null`
+- `prompt = null`
+
+예시
+
+```json
+{
+  "roomId": "room-1234abcd",
+  "gameId": "17",
+  "revision": 21,
+  "phase": "GAME_OVER",
+  "players": [],
+  "tiles": [],
+  "currentPlayerId": "1",
+  "round": 8,
+  "turnTimeoutSec": 30,
+  "prompt": null,
+  "isGameOver": true,
+  "winnerId": "1"
+}
+```
+
 ## 6. Implementation Notes
 
 - 금액 단위는 현재 백엔드 전역에서 `만원 단위 정수`를 사용한다.

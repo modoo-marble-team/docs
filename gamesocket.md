@@ -679,6 +679,13 @@ prompt type 메모
 }
 ```
 
+게임 종료 후 snapshot / full sync는 아래 규칙을 따른다.
+
+- `phase`는 항상 `GAME_OVER`
+- `isGameOver`는 항상 `true`
+- `winnerId`는 승자 `playerId` 문자열이며 승자 없음이면 `null`
+- `prompt`는 `null`
+
 ### Phase
 
 현재 구현에서 실제로 쓰는 phase
@@ -847,6 +854,20 @@ snapshot의 `tiles[].type`은 board enum value 그대로 내려간다.
 ```
 
 ### `GAME_OVER`
+
+last player standing 종료
+
+```json
+{
+  "type": "GAME_OVER",
+  "reason": "last_player_standing",
+  "winner": {
+    "playerId": 1,
+    "nickname": "host",
+    "balance": 6100
+  }
+}
+```
 
 일반 종료 / 라운드 종료
 
