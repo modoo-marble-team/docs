@@ -181,6 +181,7 @@ patch log 정책
 
 - `ROLL_DICE`
 - `BUY_PROPERTY`
+- `CITY_BUILD`
 - `SELL_PROPERTY`
 - `END_TURN`
 
@@ -223,15 +224,37 @@ patch log 정책
 동작
 
 - 해당 타일이 무주지면 매입
-- 본인 소유 타일이면 다음 건설 단계 매입
+- 본인 소유 타일 건설은 `CITY_BUILD`를 사용
 - 타인 소유 타일이면 거절
+
+### `CITY_BUILD`
+
+```json
+{
+  "gameId": "17",
+  "actionId": "a-3",
+  "type": "CITY_BUILD",
+  "payload": {
+    "tileId": 4
+  }
+}
+```
+
+동작
+
+- 자기 턴의 `WAIT_ROLL`, `RESOLVING` 상태에서 허용
+- 본인 소유 `PROPERTY` 타일만 다음 건설 단계로 1단계 증설
+- 최대 단계(7)에 도달했거나 잔액이 부족하면 거절
+- 성공해도 턴은 즉시 종료되지 않음
+- 착지 후 뜨는 `BUILD_OR_SKIP` prompt 흐름과 별개로, 자기 턴에는 다른 소유 타일도 자유롭게 증설 가능
+- 주사위를 이미 굴린 뒤에도 자기 턴 시간이 남아 있고 prompt가 없으면 계속 호출 가능
 
 ### `SELL_PROPERTY`
 
 ```json
 {
   "gameId": "17",
-  "actionId": "a-3",
+  "actionId": "a-4",
   "type": "SELL_PROPERTY",
   "payload": {
     "tileId": 4,
@@ -244,24 +267,34 @@ patch log 정책
 
 - `buildingLevel` 생략 가능
 - 생략 시 현재 단계 기준으로 1단계 매각 처리
+- 자기 턴의 `WAIT_ROLL`, `RESOLVING` 상태에서 허용
+- 성공해도 턴은 즉시 종료되지 않음
+- 주사위를 이미 굴린 뒤에도 자기 턴 시간이 남아 있고 prompt가 없으면 계속 호출 가능
 
 ### `END_TURN`
 
 ```json
 {
   "gameId": "17",
-  "actionId": "a-4",
+  "actionId": "a-5",
   "type": "END_TURN",
   "payload": {}
 }
 ```
+
+동작
+
+- 자기 턴의 `RESOLVING` 상태에서만 허용
+- 아직 주사위를 굴리지 않은 `WAIT_ROLL` 상태에서는 거절
+- 현재 처리해야 할 prompt가 남아 있으면 거절
+- 성공 시 다음 플레이어로 턴이 넘어가며 turn timer가 재시작
 
 ### `TRAVEL` (legacy compatibility)
 
 ```json
 {
   "gameId": "17",
-  "actionId": "a-5",
+  "actionId": "a-6",
   "type": "TRAVEL",
   "payload": {
     "toIndex": 4
