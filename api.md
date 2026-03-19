@@ -1,6 +1,6 @@
 # REST API Specification
 
-이 문서는 `backend/app` 현재 구현 기준의 REST API 명세다. 문서 우선순위보다 실제 코드 동작을 기준으로 다시 정리했다.
+이 문서는 `backend/app` 현재 구현 기준의 REST API 명세다. 문서 우선순위보다 실제 코드 동작을 기준으로 다시 정리함.
 
 ## 0. Common Rules
 
