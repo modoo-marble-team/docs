@@ -118,6 +118,37 @@ patch log 정책
 | `game:error` | `INVALID_REQUEST` | `gameId` 누락                |
 | `game:error` | `DESYNC`          | revision 불일치 또는 복구 필요 |
 
+## 2.1.1 `game:sync_timer`
+
+목적
+
+- 브라우저 새로고침 / 탭 복구 후 남은 턴 시간을 서버 기준으로 다시 맞춤
+- prompt가 열려 있다면 prompt 남은 시간도 함께 복구
+
+요청
+
+```json
+{
+  "gameId": "17"
+}
+```
+
+동작
+
+- 게임 멤버만 호출 가능하다.
+- 서버는 현재 runtime timer 기준으로 `game:timer_sync`를 요청자에게만 보낸다.
+- `game:sync`와 달리 state snapshot / patch replay는 하지 않는다.
+- `prompt` 타이머 정보는 현재 prompt owner에게만 포함된다.
+
+오류
+
+| Event          | code                | 의미                    |
+| -------------- | ------------------- | ----------------------- |
+| `game:error` | `AUTH_REQUIRED`   | 소켓 인증 없음          |
+| `game:error` | `INVALID_REQUEST` | `gameId` 누락         |
+| `game:error` | `GAME_NOT_FOUND`  | 게임 상태 없음          |
+| `game:error` | `NOT_GAME_MEMBER` | 해당 게임 참가자 아님   |
+
 ## 2.2 `game:action`
 
 목적
@@ -539,7 +570,47 @@ prompt type 메모
   - choice는 `ACQUIRE`, `SKIP`
   - `payload.acquisitionCost`는 원주인에게 추가 지급할 인수 금액이다.
 
-## 3.4 `game:error`
+## 3.4 `game:timer_sync`
+
+목적
+
+- 서버 기준 현재 남은 턴 시간 / prompt 시간을 복구
+- `game:sync_timer` 요청자에게만 전송
+
+예시
+
+```json
+{
+  "gameId": "17",
+  "revision": 13,
+  "serverTimeMs": 1742373000000,
+  "turnDeadlineAtMs": 1742373030000,
+  "turnRemainingMs": 30000,
+  "turnRemainingSec": 30,
+  "prompt": {
+    "promptId": "prompt-1234567890",
+    "type": "BUY_OR_SKIP",
+    "timeoutSec": 30,
+    "deadlineAtMs": 1742373021000,
+    "remainingMs": 21000,
+    "remainingSec": 21
+  }
+}
+```
+
+필드 메모
+
+- `serverTimeMs`: 응답 생성 시점의 서버 epoch milliseconds
+- `turnDeadlineAtMs`: 현재 턴 자동 처리 예정 시각. 타이머가 없으면 `null`
+- `turnRemainingMs`, `turnRemainingSec`: 현재 턴 남은 시간. 타이머가 없으면 `null`
+- `prompt`: 현재 사용자에게 열린 prompt가 있을 때만 포함, 아니면 `null`
+
+프론트 처리 규칙
+
+- 창 복구 시 먼저 `game:sync`로 상태를 맞추고, 이어서 `game:sync_timer`로 남은 시간을 덮어쓴다.
+- 로컬 카운트다운을 신뢰하지 말고 `turnRemaining*` / `promptRemaining*` 값을 서버 기준으로 재설정해야 한다.
+
+## 3.5 `game:error`
 
 목적
 
