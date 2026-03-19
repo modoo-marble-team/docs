@@ -1,8 +1,6 @@
 # REST API Specification
 ## 0. Common Rules
 
-### Base URL
-
 - 기본경로: `/api`
 - 헬스체크: `/health`, `/api/health`
 
