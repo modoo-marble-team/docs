@@ -10,6 +10,11 @@
 - Refresh는 HttpOnly 쿠키 `modoo_refresh_token`를 사용한다.
 - Socket 인증은 별도 문서 [`gamesocket.md`](./gamesocket.md)를 따른다.
 
+### Gameplay Contract Note
+
+- 실제 게임 진행 중 prompt / event payload 계약은 REST 문서가 아니라 [`gamesocket.md`](./gamesocket.md)가 기준이다.
+- 특히 카드 설명 문구는 `CHANCE_RESOLVED.chance.description`, 착지 이벤트 타일 정보는 `LANDED.tile` nested payload를 기준으로 처리해야 한다.
+
 ### Content Type
 
 - JSON body가 있는 요청은 `Content-Type: application/json`
@@ -753,4 +758,7 @@
 
 - 금액 단위는 현재 백엔드 전역에서 `만원 단위 정수`를 사용한다.
 - Room/Game ID는 문자열로 내려가지만, 일부 이벤트 payload의 `playerId`는 숫자로 내려간다. 프론트는 문자열/숫자 모두 허용해야 한다.
+- 타인 소유 땅 도착 시 prompt flow는 `PAY_TOLL` 이후 `ACQUISITION_OR_SKIP`가 이어지는 2단계 구조다.
+- 인수 prompt payload에는 `tileId`, `tileName`, `ownerId`, `ownerName`, `buildingLevel`, `acquisitionCost`, `toll`이 포함될 수 있다.
+- 인수 금액은 "땅 가격 + 현재 건물 단계까지 들어간 전체 건설비"다.
 - 게임 실시간 이벤트, prompt, patch, sync 규격은 [`gamesocket.md`](./gamesocket.md)를 기준으로 본다.

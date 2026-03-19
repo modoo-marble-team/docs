@@ -269,7 +269,60 @@ patch log 정책
 | `BUY_OR_SKIP`   | `BUY`, `SKIP`     |
 | `BUILD_OR_SKIP` | `BUILD`, `SKIP`   |
 | `PAY_TOLL`      | `PAY_TOLL`          |
+| `ACQUISITION_OR_SKIP` | `ACQUIRE`, `SKIP` |
 | `TRAVEL_SELECT` | `CONFIRM`, `SKIP` |
+
+주요 prompt payload
+
+### `BUY_OR_SKIP.payload`
+
+```json
+{
+  "tileId": 4,
+  "tileName": "군산",
+  "price": 300,
+  "buildingLevel": 0
+}
+```
+
+### `BUILD_OR_SKIP.payload`
+
+```json
+{
+  "tileId": 4,
+  "tileName": "군산",
+  "price": 180,
+  "buildCost": 180,
+  "buildingLevel": 0,
+  "nextToll": 70
+}
+```
+
+메모
+
+- `price` 와 `buildCost` 는 현재 구현에서 같은 값을 가진다.
+- 프론트는 건설 팝업에서 `buildCost`, `nextToll` 값을 그대로 표시해야 한다.
+- `buildingLevel` 은 현재 단계이고, 실제 건설 후 단계는 `buildingLevel + 1` 이다.
+
+### `PAY_TOLL.payload`
+
+```json
+{
+  "tileId": 4,
+  "tileName": "군산",
+  "ownerId": 1,
+  "ownerName": "host",
+  "acquisitionCost": 700,
+  "toll": 120,
+  "amount": 120,
+  "buildingLevel": 2
+}
+```
+
+메모
+
+- `toll` 과 `amount` 는 현재 구현에서 같은 값을 가진다.
+- 프론트는 통행료 표시에서 `amount`, `toll` 둘 다 허용하는 편이 안전하다.
 
 `TRAVEL_SELECT` confirm 예시
 
@@ -283,6 +336,14 @@ patch log 정책
   }
 }
 ```
+
+타인 소유 땅 도착 flow
+
+- 서버는 먼저 `PAY_TOLL` prompt를 보낸다.
+- `PAY_TOLL` 성공 후, 플레이어가 파산하지 않았으면 같은 턴에 `ACQUISITION_OR_SKIP` prompt를 추가로 보낸다.
+- `ACQUISITION_OR_SKIP.payload`에는 `tileId`, `tileName`, `ownerId`, `ownerName`, `buildingLevel`, `acquisitionCost`, `toll`이 들어간다.
+- `ACQUIRE`는 "땅 가격 + 현재 건물 단계까지 들어간 전체 건설비"를 원주인에게 추가 지급하고 소유권과 건물 단계를 그대로 넘긴다.
+- `SKIP`은 추가 정산 없이 prompt만 종료한다.
 
 오류
 
@@ -454,7 +515,19 @@ patch operation
 - `BUY_OR_SKIP`
 - `BUILD_OR_SKIP`
 - `PAY_TOLL`
+- `ACQUISITION_OR_SKIP`
 - `TRAVEL_SELECT`
+
+prompt type 메모
+
+- `PAY_TOLL`
+  - 타인 소유 땅 도착 시 먼저 뜨는 확인 prompt
+  - choice는 `PAY_TOLL` 하나만 허용
+  - 성공 후 플레이어가 파산하지 않았으면 `ACQUISITION_OR_SKIP`가 이어질 수 있다.
+- `ACQUISITION_OR_SKIP`
+  - 통행료 지불 직후 인수 여부를 고르는 prompt
+  - choice는 `ACQUIRE`, `SKIP`
+  - `payload.acquisitionCost`는 원주인에게 추가 지급할 인수 금액이다.
 
 ## 3.4 `game:error`
 
@@ -570,6 +643,7 @@ snapshot의 `tiles[].type`은 board enum value 그대로 내려간다.
 - `LANDED`
 - `PAID_TOLL`
 - `BOUGHT_PROPERTY`
+- `ACQUIRED_PROPERTY`
 - `SOLD_PROPERTY`
 - `TURN_ENDED`
 - `PLAYER_STATE_CHANGED`
@@ -620,6 +694,12 @@ snapshot의 `tiles[].type`은 board enum value 그대로 내려간다.
 }
 ```
 
+메모
+
+- 현재 구현의 `LANDED` 는 타일 정보를 top-level `tileId` 로 내리지 않고 nested `tile` 객체 안에 담는다.
+- 프론트는 `event.tile.tileId`, `event.tile.name`, `event.tile.tileType` 을 읽을 수 있어야 한다.
+- `LANDED` 처리에서 top-level `tileId` 만 가정하면 `알 수 없는 칸` 같은 표시 오류가 날 수 있다.
+
 ### `PAID_TOLL`
 
 ```json
@@ -629,6 +709,47 @@ snapshot의 `tiles[].type`은 board enum value 그대로 내려간다.
   "toPlayerId": 1,
   "amount": 500,
   "tileId": 4
+}
+```
+
+메모
+
+- 타인 소유 땅 도착 시 `PAID_TOLL` 이후 같은 턴에 `ACQUISITION_OR_SKIP` prompt가 이어질 수 있다.
+- 플레이어가 통행료로 파산하면 추가 인수 prompt는 보내지지 않는다.
+
+### `CHANCE_RESOLVED`
+
+```json
+{
+  "type": "CHANCE_RESOLVED",
+  "playerId": 1,
+  "tileId": 3,
+  "chance": {
+    "type": "GAIN_MONEY",
+    "power": 300,
+    "description": "보너스 300만원을 획득합니다."
+  }
+}
+```
+
+메모
+
+- `CHANCE` 칸과 `EVENT` 칸 모두 현재 구현에서는 결과 이벤트 타입으로 `CHANCE_RESOLVED` 를 사용한다.
+- 사용자에게 보여줄 카드 문구는 하드코딩된 기본 문자열이 아니라 `chance.description` 을 우선 사용해야 한다.
+- `chance.type` 은 효과 분기용이고, 실제 카드 문구는 `chance.description` 이 기준이다.
+- 일부 카드(`STEAL_PROPERTY`, `GIVE_PROPERTY`)는 `chance` 내부에 `fromPlayerId`, `toPlayerId`, `tileId` 같은 추가 필드가 들어갈 수 있다.
+
+### `ACQUIRED_PROPERTY`
+
+```json
+{
+  "type": "ACQUIRED_PROPERTY",
+  "playerId": 2,
+  "fromPlayerId": 1,
+  "toPlayerId": 2,
+  "tileId": 4,
+  "amount": 800,
+  "buildingLevel": 2
 }
 ```
 
