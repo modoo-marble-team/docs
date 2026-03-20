@@ -14,7 +14,7 @@
 
 - 실제 게임 진행 중 prompt / event payload 계약은 REST 문서가 아니라 [`gamesocket.md`](./gamesocket.md)가 기준이다.
 - 특히 카드 설명 문구는 `CHANCE_RESOLVED.chance.description`, 착지 이벤트 타일 정보는 `LANDED.tile` nested payload를 기준으로 처리해야 한다.
-- 자기 턴의 실시간 소유지 관리 액션(`CITY_BUILD`, `SELL_PROPERTY`)도 [`gamesocket.md`](./gamesocket.md) 기준으로 본다.
+- 건설은 착지 기반 prompt(`BUY_OR_SKIP`, `BUILD_OR_SKIP`) 흐름이 기준이고, 실시간 소유지 매각(`SELL_PROPERTY`) 규격도 [`gamesocket.md`](./gamesocket.md)를 따른다.
 
 ### Content Type
 
@@ -739,7 +739,7 @@
       "playerId": "1",
       "nickname": "host",
       "currentTileId": 4,
-      "balance": 4500,
+      "balance": 450000,
       "ownedTiles": [4],
       "isInJail": false,
       "stateDuration": 0,
@@ -751,11 +751,11 @@
   "tiles": [
     {
       "id": 4,
-      "name": "구산",
+      "name": "군산",
       "type": "PROPERTY",
       "ownerId": "1",
       "buildingLevel": 0,
-      "price": 500
+      "price": 30000
     }
   ],
   "currentPlayerId": "1",
@@ -766,8 +766,8 @@
     "promptId": "prompt-1234567890",
     "type": "BUY_OR_SKIP",
     "playerId": "1",
-    "title": "구산 purchase",
-    "message": "Buy 구산 for 500만원?",
+    "title": "군산 구매",
+    "message": "군산을(를) 3억원에 구매하시겠습니까?",
     "timeoutSec": 30,
     "choices": [
       {
@@ -783,8 +783,8 @@
     ],
     "payload": {
       "tileId": 4,
-      "tileName": "구산",
-      "price": 500,
+      "tileName": "군산",
+      "price": 30000,
       "buildingLevel": 0
     }
   },
@@ -831,11 +831,15 @@
 ## 6. Implementation Notes
 
 - 금액 단위는 현재 백엔드 전역에서 `만원 단위 정수`를 사용한다.
+- 예: `50000` = 50억
 - Room/Game ID는 문자열로 내려가지만, 일부 이벤트 payload의 `playerId`는 숫자로 내려간다. 프론트는 문자열/숫자 모두 허용해야 한다.
 - 타인 소유 땅 도착 시 prompt flow는 `PAY_TOLL` 이후 `ACQUISITION_OR_SKIP`가 이어지는 2단계 구조다.
 - 인수 prompt payload에는 `tileId`, `tileName`, `ownerId`, `ownerName`, `buildingLevel`, `acquisitionCost`, `toll`이 포함될 수 있다.
 - 인수 금액은 "땅 가격 + 현재 건물 단계까지 들어간 전체 건설비"다.
-- 자기 턴의 `WAIT_ROLL`, `RESOLVING` 상태에서는 착지한 칸과 무관하게 본인 소유 타일에 대해 `CITY_BUILD`, `SELL_PROPERTY`를 호출할 수 있다.
-- `CITY_BUILD`, `SELL_PROPERTY` 성공 시 턴은 자동 종료되지 않는다.
+- 건물 단계는 `0=토지만`, `1=주택`, `2=호텔`, `3=랜드마크`다.
+- 무주지 첫 구매 후에는 같은 착지 흐름에서 `주택` prompt가 한 번 더 이어질 수 있다.
+- `호텔`, `랜드마크`는 해당 땅을 다시 밟았을 때만 건설할 수 있다.
+- `CITY_BUILD` action은 더 이상 지원하지 않으며 서버가 `INVALID_PHASE`로 거절한다.
+- `SELL_PROPERTY` 성공 시 턴은 자동 종료되지 않는다.
 - 수동 `END_TURN`은 주사위를 이미 굴린 뒤(`RESOLVING`)이며 현재 처리할 prompt가 없을 때만 허용된다.
 - 게임 실시간 이벤트, prompt, patch, sync 규격은 [`gamesocket.md`](./gamesocket.md)를 기준으로 본다.

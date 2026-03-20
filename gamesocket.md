@@ -223,9 +223,9 @@ patch log 정책
 
 동작
 
-- 해당 타일이 무주지면 매입
-- 본인 소유 타일 건설은 `CITY_BUILD`를 사용
-- 타인 소유 타일이면 거절
+- 현재 기획에서는 도착 직후 생성되는 `BUY_OR_SKIP` prompt 응답으로 토지를 구매한다.
+- `BUY_PROPERTY` action은 레거시 호환용으로만 남아 있고, 임의 소유지 건설 용도로는 사용할 수 없다.
+- 타인 소유 타일이거나 현재 위치와 맞지 않으면 거절된다.
 
 ### `CITY_BUILD`
 
@@ -242,12 +242,12 @@ patch log 정책
 
 동작
 
-- 자기 턴의 `WAIT_ROLL`, `RESOLVING` 상태에서 허용
-- 본인 소유 `PROPERTY` 타일만 다음 건설 단계로 1단계 증설
-- 최대 단계(7)에 도달했거나 잔액이 부족하면 거절
-- 성공해도 턴은 즉시 종료되지 않음
-- 착지 후 뜨는 `BUILD_OR_SKIP` prompt 흐름과 별개로, 자기 턴에는 다른 소유 타일도 자유롭게 증설 가능
-- 주사위를 이미 굴린 뒤에도 자기 턴 시간이 남아 있고 prompt가 없으면 계속 호출 가능
+- 현재 구현에서는 더 이상 지원하지 않는다.
+- 서버는 항상 `INVALID_PHASE`로 거절한다.
+- 건설은 도착한 본인 소유 땅에서 생성되는 `BUILD_OR_SKIP` prompt로만 진행한다.
+- 건물 단계는 `0=토지만`, `1=주택`, `2=호텔`, `3=랜드마크`다.
+- 무주지 첫 구매 후에는 같은 착지 흐름 안에서 `주택`까지 한 번 더 제안될 수 있다.
+- `호텔`, `랜드마크`는 해당 땅을 다시 밟았을 때만 제안된다.
 
 ### `SELL_PROPERTY`
 
@@ -354,7 +354,7 @@ patch log 정책
 {
   "tileId": 4,
   "tileName": "군산",
-  "price": 300,
+  "price": 30000,
   "buildingLevel": 0
 }
 ```
@@ -365,10 +365,10 @@ patch log 정책
 {
   "tileId": 4,
   "tileName": "군산",
-  "price": 180,
-  "buildCost": 180,
+  "price": 40000,
+  "buildCost": 40000,
   "buildingLevel": 0,
-  "nextToll": 70
+  "nextToll": 12000
 }
 ```
 
@@ -377,6 +377,7 @@ patch log 정책
 - `price` 와 `buildCost` 는 현재 구현에서 같은 값을 가진다.
 - 프론트는 건설 팝업에서 `buildCost`, `nextToll` 값을 그대로 표시해야 한다.
 - `buildingLevel` 은 현재 단계이고, 실제 건설 후 단계는 `buildingLevel + 1` 이다.
+- 단계 의미는 `0=토지만`, `1=주택`, `2=호텔`, `3=랜드마크`다.
 
 ### `PAY_TOLL.payload`
 
@@ -386,9 +387,9 @@ patch log 정책
   "tileName": "군산",
   "ownerId": 1,
   "ownerName": "host",
-  "acquisitionCost": 700,
-  "toll": 120,
-  "amount": 120,
+  "acquisitionCost": 186000,
+  "toll": 40000,
+  "amount": 40000,
   "buildingLevel": 2
 }
 ```
@@ -560,8 +561,8 @@ patch operation
   "promptId": "prompt-1234567890",
   "type": "BUY_OR_SKIP",
   "playerId": "1",
-  "title": "구산 구매",
-  "message": "구산을 500만원에 구매하시겠습니까?",
+  "title": "군산 구매",
+  "message": "군산을(를) 300만원에 구매하시겠습니까?",
   "timeoutSec": 30,
   "choices": [
     {
@@ -577,8 +578,8 @@ patch operation
   ],
   "payload": {
     "tileId": 4,
-    "tileName": "구산",
-    "price": 500,
+    "tileName": "군산",
+    "price": 30000,
     "buildingLevel": 0
   }
 }
@@ -602,6 +603,10 @@ prompt type 메모
   - 통행료 지불 직후 인수 여부를 고르는 prompt
   - choice는 `ACQUIRE`, `SKIP`
   - `payload.acquisitionCost`는 원주인에게 추가 지급할 인수 금액이다.
+- `BUILD_OR_SKIP`
+  - 현재 칸을 다시 밟았을 때만 열린다.
+  - `buildingLevel + 1` 단계가 실제 건설 대상이다.
+  - 현재 단계 체계는 `토지만 -> 주택 -> 호텔 -> 랜드마크` 4단계다.
 
 ## 3.4 `game:timer_sync`
 
@@ -684,7 +689,7 @@ prompt type 메모
       "playerId": "1",
       "nickname": "host",
       "currentTileId": 4,
-      "balance": 4500,
+      "balance": 450000,
       "ownedTiles": [4],
       "isInJail": false,
       "stateDuration": 0,
@@ -696,11 +701,11 @@ prompt type 메모
   "tiles": [
     {
       "id": 4,
-      "name": "구산",
+      "name": "군산",
       "type": "PROPERTY",
       "ownerId": "1",
       "buildingLevel": 0,
-      "price": 500
+      "price": 30000
     }
   ],
   "currentPlayerId": "1",
@@ -807,10 +812,10 @@ snapshot의 `tiles[].type`은 board enum value 그대로 내려간다.
   "playerId": 1,
   "tile": {
     "tileId": 4,
-    "name": "구산",
+    "name": "군산",
     "tileType": "PROPERTY",
     "tier": 1,
-    "price": 500
+    "price": 30000
   }
 }
 ```
@@ -828,7 +833,7 @@ snapshot의 `tiles[].type`은 board enum value 그대로 내려간다.
   "type": "PAID_TOLL",
   "fromPlayerId": 2,
   "toPlayerId": 1,
-  "amount": 500,
+  "amount": 40000,
   "tileId": 4
 }
 ```
@@ -847,8 +852,8 @@ snapshot의 `tiles[].type`은 board enum value 그대로 내려간다.
   "tileId": 3,
   "chance": {
     "type": "GAIN_MONEY",
-    "power": 300,
-    "description": "보너스 300만원을 획득합니다."
+    "power": 30000,
+    "description": "보너스 3억원을 획득합니다."
   }
 }
 ```
@@ -897,7 +902,7 @@ last player standing 종료
   "winner": {
     "playerId": 1,
     "nickname": "host",
-    "balance": 6100
+    "balance": 610000
   }
 }
 ```
@@ -911,7 +916,7 @@ last player standing 종료
   "winner": {
     "playerId": 1,
     "nickname": "host",
-    "balance": 6100
+    "balance": 610000
   }
 }
 ```
@@ -925,7 +930,7 @@ disconnect timeout 종료
   "winner": {
     "playerId": 2,
     "nickname": "guest",
-    "balance": 5300
+    "balance": 530000
   }
 }
 ```
