@@ -1,6 +1,8 @@
 # REST API Specification
+
 ## 0. Common Rules
 
+- Refresh cookie 기본 정책은 `SameSite=None`, `Secure=true`다.
 - 기본경로: `/api`
 - 헬스체크: `/health`, `/api/health`
 
@@ -58,13 +60,13 @@
 
 아래 엔드포인트들은 구현상 별도 `code` 없이 `detail`만 내려간다.
 
-| HTTP | detail |
-|---|---|
+| HTTP    | detail                           |
+| ------- | -------------------------------- |
 | `401` | `Authorization header missing` |
 | `401` | `Invalid Authorization header` |
-| `401` | `Token expired` |
-| `401` | `Invalid token` |
-| `401` | `Invalid token payload` |
+| `401` | `Token expired`                |
+| `401` | `Invalid token`                |
+| `401` | `Invalid token payload`        |
 
 ---
 
@@ -78,8 +80,8 @@
 
 성공 응답
 
-| HTTP | Body |
-|---|---|
+| HTTP    | Body                                                           |
+| ------- | -------------------------------------------------------------- |
 | `200` | `{"status":"ok","title":"모두의마블 API","version":"0.1.0"}` |
 
 ### `GET /api/health`
@@ -90,8 +92,8 @@
 
 성공 응답
 
-| HTTP | Body |
-|---|---|
+| HTTP    | Body                                                           |
+| ------- | -------------------------------------------------------------- |
 | `200` | `{"status":"ok","title":"모두의마블 API","version":"0.1.0"}` |
 
 ---
@@ -107,19 +109,19 @@
 요청 헤더
 
 | Header | Required | Value |
-|---|---|---|
-| 없음 | - | - |
+| ------ | -------- | ----- |
+| 없음   | -        | -     |
 
 성공 응답
 
-| HTTP | Header | Body |
-|---|---|---|
+| HTTP    | Header                                                    | Body |
+| ------- | --------------------------------------------------------- | ---- |
 | `302` | `Location: https://kauth.kakao.com/oauth/authorize?...` | 없음 |
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
+| HTTP    | code | Body                                     |
+| ------- | ---- | ---------------------------------------- |
 | `500` | 없음 | `{"detail":"Kakao OAuth env missing"}` |
 
 ### `GET /api/auth/kakao/callback`
@@ -129,25 +131,25 @@
 
 쿼리
 
-| Name | Type | Required |
-|---|---|---|
-| `code` | string | yes |
+| Name     | Type   | Required |
+| -------- | ------ | -------- |
+| `code` | string | yes      |
 
 성공 응답
 
-| HTTP | Header | Body |
-|---|---|---|
-| `302` | `Set-Cookie: modoo_refresh_token=...; HttpOnly; Path=/api/auth` | 없음 |
-| `302` | `Location: {FRONTEND_LOGIN_REDIRECT}?access_token=...&is_new_user=true|false` | 없음 |
+| HTTP    | Header                                                                 | Body   |
+| ------- | ---------------------------------------------------------------------- | ------ |
+| `302` | `Set-Cookie: modoo_refresh_token=...; HttpOnly; Path=/api/auth`      | 없음   |
+| `302` | `Location: {FRONTEND_LOGIN_REDIRECT}?access_token=...&is_new_user=true | false` |
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `400` | 없음 | `{"detail":"Kakao token exchange failed"}` 등 |
-| `500` | 없음 | `{"detail":"Kakao OAuth env missing"}` |
+| HTTP    | code | Body                                             |
+| ------- | ---- | ------------------------------------------------ |
+| `400` | 없음 | `{"detail":"Kakao token exchange failed"}` 등  |
+| `500` | 없음 | `{"detail":"Kakao OAuth env missing"}`         |
 | `500` | 없음 | `{"detail":"FRONTEND_LOGIN_REDIRECT missing"}` |
-| `422` | 없음 | FastAPI validation error |
+| `422` | 없음 | FastAPI validation error                         |
 
 ### `POST /api/auth/kakao/callback`
 
@@ -164,8 +166,8 @@
 
 성공 응답
 
-| HTTP | Header | Body |
-|---|---|---|
+| HTTP    | Header                                                            | Body           |
+| ------- | ----------------------------------------------------------------- | -------------- |
 | `200` | `Set-Cookie: modoo_refresh_token=...; HttpOnly; Path=/api/auth` | 아래 예시 참조 |
 
 ```json
@@ -183,11 +185,11 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
+| HTTP    | code | Body                                            |
+| ------- | ---- | ----------------------------------------------- |
 | `400` | 없음 | `{"detail":"Kakao token exchange failed"}` 등 |
-| `500` | 없음 | `{"detail":"Kakao OAuth env missing"}` |
-| `422` | 없음 | FastAPI validation error |
+| `500` | 없음 | `{"detail":"Kakao OAuth env missing"}`        |
+| `422` | 없음 | FastAPI validation error                        |
 
 ### `POST /api/auth/guest`
 
@@ -197,8 +199,8 @@
 
 성공 응답
 
-| HTTP | Header | Body |
-|---|---|---|
+| HTTP    | Header                                                            | Body             |
+| ------- | ----------------------------------------------------------------- | ---------------- |
 | `200` | `Set-Cookie: modoo_refresh_token=...; HttpOnly; Path=/api/auth` | `AuthResponse` |
 
 ```json
@@ -216,8 +218,8 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
+| HTTP    | code | Body                                     |
+| ------- | ---- | ---------------------------------------- |
 | `409` | 없음 | `{"detail":"Guest creation conflict"}` |
 
 ### `GET /api/auth/session`
@@ -228,15 +230,15 @@
 
 성공 응답
 
-| HTTP | Body |
-|---|---|
+| HTTP    | Body                                                                                 |
+| ------- | ------------------------------------------------------------------------------------ |
 | `200` | `{"id":1,"nickname":"player1","profile_image_url":"https://...","is_guest":false}` |
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
+| HTTP    | code | Body                            |
+| ------- | ---- | ------------------------------- |
+| `401` | 없음 | 공통 auth failure               |
 | `404` | 없음 | `{"detail":"User not found"}` |
 
 ### `POST /api/auth/refresh`
@@ -247,14 +249,14 @@
 
 요청 헤더
 
-| Header | Required | Value |
-|---|---|---|
-| `Cookie` | yes | `modoo_refresh_token=<refresh-token>` |
+| Header     | Required | Value                                   |
+| ---------- | -------- | --------------------------------------- |
+| `Cookie` | yes      | `modoo_refresh_token=<refresh-token>` |
 
 성공 응답
 
-| HTTP | Header | Body |
-|---|---|---|
+| HTTP    | Header                                                            | Body           |
+| ------- | ----------------------------------------------------------------- | -------------- |
 | `200` | `Set-Cookie: modoo_refresh_token=...; HttpOnly; Path=/api/auth` | 아래 예시 참조 |
 
 ```json
@@ -267,8 +269,8 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
+| HTTP    | code | Body                                   |
+| ------- | ---- | -------------------------------------- |
 | `401` | 없음 | `{"detail":"Refresh token missing"}` |
 | `401` | 없음 | `{"detail":"Refresh token expired"}` |
 | `401` | 없음 | `{"detail":"Invalid refresh token"}` |
@@ -281,14 +283,14 @@
 
 요청 헤더
 
-| Header | Required | Value |
-|---|---|---|
-| `Cookie` | no | `modoo_refresh_token=<refresh-token>` |
+| Header     | Required | Value                                   |
+| ---------- | -------- | --------------------------------------- |
+| `Cookie` | no       | `modoo_refresh_token=<refresh-token>` |
 
 성공 응답
 
-| HTTP | Header | Body |
-|---|---|---|
+| HTTP    | Header                                                          | Body                 |
+| ------- | --------------------------------------------------------------- | -------------------- |
 | `200` | `Set-Cookie: modoo_refresh_token=; Max-Age=0; Path=/api/auth` | `{"success":true}` |
 
 에러
@@ -324,11 +326,11 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
+| HTTP    | code | Body                               |
+| ------- | ---- | ---------------------------------- |
+| `401` | 없음 | 공통 auth failure                  |
 | `403` | 없음 | `{"detail":"Guest not allowed"}` |
-| `404` | 없음 | `{"detail":"User not found"}` |
+| `404` | 없음 | `{"detail":"User not found"}`    |
 
 ### `GET /api/users/me/context`
 
@@ -373,8 +375,8 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
+| HTTP    | code | Body              |
+| ------- | ---- | ----------------- |
 | `401` | 없음 | 공통 auth failure |
 
 ### `PATCH /api/users/me/nickname`
@@ -398,20 +400,20 @@
 
 성공 응답
 
-| HTTP | Body |
-|---|---|
+| HTTP    | Body                               |
+| ------- | ---------------------------------- |
 | `200` | `{"id":1,"nickname":"새닉네임"}` |
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
-| `403` | 없음 | `{"detail":"Guest not allowed"}` |
-| `400` | 없음 | `{"detail":"Invalid nickname"}` |
-| `404` | 없음 | `{"detail":"User not found"}` |
+| HTTP    | code | Body                                     |
+| ------- | ---- | ---------------------------------------- |
+| `401` | 없음 | 공통 auth failure                        |
+| `403` | 없음 | `{"detail":"Guest not allowed"}`       |
+| `400` | 없음 | `{"detail":"Invalid nickname"}`        |
+| `404` | 없음 | `{"detail":"User not found"}`          |
 | `409` | 없음 | `{"detail":"Nickname already exists"}` |
-| `422` | 없음 | FastAPI validation error |
+| `422` | 없음 | FastAPI validation error                 |
 
 ### `GET /api/users/online`
 
@@ -441,8 +443,8 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
+| HTTP    | code | Body              |
+| ------- | ---- | ----------------- |
 | `401` | 없음 | 공통 auth failure |
 
 ---
@@ -457,11 +459,11 @@
 
 쿼리
 
-| Name | Type | Required | Description |
-|---|---|---|---|
-| `status` | string | no | 예: `waiting`, `playing` |
-| `exclude_private` | boolean | no | 비공개 방 제외 여부 |
-| `keyword` | string | no | 제목 substring 검색 |
+| Name                | Type    | Required | Description                 |
+| ------------------- | ------- | -------- | --------------------------- |
+| `status`          | string  | no       | 예:`waiting`, `playing` |
+| `exclude_private` | boolean | no       | 비공개 방 제외 여부         |
+| `keyword`         | string  | no       | 제목 substring 검색         |
 
 성공 응답
 
@@ -534,13 +536,13 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
-| `404` | `USER_NOT_FOUND` | `ApiError` |
-| `409` | `ALREADY_JOINED_ROOM` | `ApiError` |
-| `400` | `ROOM_PASSWORD_REQUIRED` | `ApiError` |
-| `422` | 없음 | FastAPI validation error |
+| HTTP    | code                       | Body                     |
+| ------- | -------------------------- | ------------------------ |
+| `401` | 없음                       | 공통 auth failure        |
+| `404` | `USER_NOT_FOUND`         | `ApiError`             |
+| `409` | `ALREADY_JOINED_ROOM`    | `ApiError`             |
+| `400` | `ROOM_PASSWORD_REQUIRED` | `ApiError`             |
+| `422` | 없음                       | FastAPI validation error |
 
 ### `POST /api/rooms/{room_id}/join`
 
@@ -550,9 +552,9 @@
 
 경로 파라미터
 
-| Name | Type | Required |
-|---|---|---|
-| `room_id` | string | yes |
+| Name        | Type   | Required |
+| ----------- | ------ | -------- |
+| `room_id` | string | yes      |
 
 요청 바디
 
@@ -598,17 +600,17 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
-| `404` | `ROOM_NOT_FOUND` | `ApiError` |
-| `404` | `USER_NOT_FOUND` | `ApiError` |
-| `409` | `ALREADY_JOINED_ROOM` | `ApiError` |
-| `409` | `ROOM_NOT_READY_TO_START` | `ApiError` |
-| `409` | `ROOM_FULL` | `ApiError` |
-| `400` | `ROOM_PASSWORD_REQUIRED` | `ApiError` |
-| `403` | `ROOM_PASSWORD_MISMATCH` | `ApiError` |
-| `422` | 없음 | FastAPI validation error |
+| HTTP    | code                        | Body                     |
+| ------- | --------------------------- | ------------------------ |
+| `401` | 없음                        | 공통 auth failure        |
+| `404` | `ROOM_NOT_FOUND`          | `ApiError`             |
+| `404` | `USER_NOT_FOUND`          | `ApiError`             |
+| `409` | `ALREADY_JOINED_ROOM`     | `ApiError`             |
+| `409` | `ROOM_NOT_READY_TO_START` | `ApiError`             |
+| `409` | `ROOM_FULL`               | `ApiError`             |
+| `400` | `ROOM_PASSWORD_REQUIRED`  | `ApiError`             |
+| `403` | `ROOM_PASSWORD_MISMATCH`  | `ApiError`             |
+| `422` | 없음                        | FastAPI validation error |
 
 ### `POST /api/rooms/{room_id}/leave`
 
@@ -638,11 +640,11 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
-| `404` | `ROOM_NOT_FOUND` | `ApiError` |
-| `403` | `NOT_ROOM_MEMBER` | `ApiError` |
+| HTTP    | code                | Body              |
+| ------- | ------------------- | ----------------- |
+| `401` | 없음                | 공통 auth failure |
+| `404` | `ROOM_NOT_FOUND`  | `ApiError`      |
+| `403` | `NOT_ROOM_MEMBER` | `ApiError`      |
 
 ### `PATCH /api/rooms/{room_id}/ready`
 
@@ -669,11 +671,11 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
-| `404` | `ROOM_NOT_FOUND` | `ApiError` |
-| `403` | `NOT_ROOM_MEMBER` | `ApiError` |
+| HTTP    | code                | Body              |
+| ------- | ------------------- | ----------------- |
+| `401` | 없음                | 공통 auth failure |
+| `404` | `ROOM_NOT_FOUND`  | `ApiError`      |
+| `403` | `NOT_ROOM_MEMBER` | `ApiError`      |
 
 ### `POST /api/rooms/{room_id}/start`
 
@@ -701,12 +703,12 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
-| `404` | `ROOM_NOT_FOUND` | `ApiError` |
-| `403` | `ONLY_HOST_CAN_START` | `ApiError` |
-| `409` | `ROOM_NOT_READY_TO_START` | `ApiError` |
+| HTTP    | code                        | Body              |
+| ------- | --------------------------- | ----------------- |
+| `401` | 없음                        | 공통 auth failure |
+| `404` | `ROOM_NOT_FOUND`          | `ApiError`      |
+| `403` | `ONLY_HOST_CAN_START`     | `ApiError`      |
+| `409` | `ROOM_NOT_READY_TO_START` | `ApiError`      |
 
 ---
 
@@ -720,9 +722,9 @@
 
 경로 파라미터
 
-| Name | Type | Required |
-|---|---|---|
-| `game_id` | string | yes |
+| Name        | Type   | Required |
+| ----------- | ------ | -------- |
+| `game_id` | string | yes      |
 
 성공 응답
 
@@ -795,9 +797,9 @@
 
 에러
 
-| HTTP | code | Body |
-|---|---|---|
-| `401` | 없음 | 공통 auth failure |
+| HTTP    | code               | Body                                                                             |
+| ------- | ------------------ | -------------------------------------------------------------------------------- |
+| `401` | 없음               | 공통 auth failure                                                                |
 | `404` | `GAME_NOT_FOUND` | `{"code":"GAME_NOT_FOUND","message":"게임을 찾을 수 없습니다.","detail":null}` |
 
 ---
@@ -828,10 +830,43 @@
 }
 ```
 
+### `POST /api/games/{game_id}/leave`
+
+- 목적: 진행 중인 게임에서 즉시 나가기
+- 인증: Access token 필요
+- 권한: 해당 게임 참가자만 가능
+
+성공 응답
+
+```json
+{
+  "success": true
+}
+```
+
+동작
+
+- 호출 즉시 해당 플레이어는 게임에서 파산 처리된다.
+- 방 멤버 목록에서도 즉시 제거된다.
+- 남은 플레이어가 1명 이하가 되면 즉시 `GAME_OVER(reason=player_left)`가 발생한다.
+- 마지막 1명이 남아 종료된 경우, 떠난 플레이어는 방으로 복귀하지 않고 로비 상태로 정리된다.
+- 남은 플레이어가 더 있으면 게임은 계속 진행되고, 현재 턴 플레이어가 나간 경우 다음 플레이어로 턴이 넘어간다.
+- socket broadcast 효과는 기존 disconnect timeout 강제탈락과 유사하지만 대기 없이 즉시 실행된다.
+
+오류
+
+| HTTP    | code                  | Body              |
+| ------- | --------------------- | ----------------- |
+| `401` | 없음                  | 공통 auth failure |
+| `404` | `GAME_NOT_FOUND`    | `ApiError`      |
+| `403` | `NOT_GAME_MEMBER`   | `ApiError`      |
+| `409` | `GAME_NOT_PLAYING`  | `ApiError`      |
+| `409` | `GAME_LEAVE_FAILED` | `ApiError`      |
+
 ## 6. Implementation Notes
 
 - 금액 단위는 현재 백엔드 전역에서 `만원 단위 정수`를 사용한다.
-- 예: `50000` = 50억
+- 예: `500000` = 50억
 - Room/Game ID는 문자열로 내려가지만, 일부 이벤트 payload의 `playerId`는 숫자로 내려간다. 프론트는 문자열/숫자 모두 허용해야 한다.
 - 타인 소유 땅 도착 시 prompt flow는 `PAY_TOLL` 이후 `ACQUISITION_OR_SKIP`가 이어지는 2단계 구조다.
 - 인수 prompt payload에는 `tileId`, `tileName`, `ownerId`, `ownerName`, `buildingLevel`, `acquisitionCost`, `toll`이 포함될 수 있다.
@@ -839,7 +874,20 @@
 - 건물 단계는 `0=토지만`, `1=주택`, `2=호텔`, `3=랜드마크`다.
 - 무주지 첫 구매 후에는 같은 착지 흐름에서 `주택` prompt가 한 번 더 이어질 수 있다.
 - `호텔`, `랜드마크`는 해당 땅을 다시 밟았을 때만 건설할 수 있다.
+- `GAME_OVER.winner` payload에는 `balance` 외에 `assets`가 포함될 수 있다.
+- `assets`는 `보유 현금 + 소유 땅의 누적 투자금(토지 가격 + 현재 단계까지 건설비)`이다.
+- `max_rounds` 승자는 현금이 아니라 `assets` 기준으로 결정된다.
 - `CITY_BUILD` action은 더 이상 지원하지 않으며 서버가 `INVALID_PHASE`로 거절한다.
 - `SELL_PROPERTY` 성공 시 턴은 자동 종료되지 않는다.
 - 수동 `END_TURN`은 주사위를 이미 굴린 뒤(`RESOLVING`)이며 현재 처리할 prompt가 없을 때만 허용된다.
 - 게임 실시간 이벤트, prompt, patch, sync 규격은 [`gamesocket.md`](./gamesocket.md)를 기준으로 본다.
+- Disconnect timeout으로 강제 탈락한 사용자는 즉시 room 멤버 목록과 user game 매핑에서 제거된다.
+- 따라서 `GET /api/rooms`의 `current_players`는 감소해야 하고, `GET /api/users/me/context`도 더 이상 해당 사용자를 `playing` / `resume_target=game`으로 돌려주지 않아야 한다.
+- 서버 시작 시 기존 `playing` 방도 재검사 대상이며, game state가 없는 stale 방은 제거된다.
+- game state가 남아 있는 실제 진행 중 방은 즉시 삭제하지 않고 reconnect grace 이후 미복귀 인원만 정리한다.
+- reconnect grace는 60초 기준이며, 실제 정리 시점은 scheduler polling 때문에 소폭 뒤로 밀릴 수 있다.
+- 찬스 이동 카드(`MOVE_FORWARD`, `MOVE_BACKWARD`)는 `CHANCE_RESOLVED` 이후 목적지 이동 이벤트가 이어지는 순서로 내려간다.
+- 찬스 이동 목적지도 다시 착지 처리하므로 `LANDED`, 특수칸 효과, 후속 prompt가 추가로 발생할 수 있다.
+- 게임 나가기 API는 `POST /api/games/{game_id}/leave`보다 `POST /api/rooms/{room_id}/leave`를 우선 사용한다.
+- `POST /api/rooms/{room_id}/leave`는 `room.status = waiting`이면 일반 room leave, `room.status = playing`이면 즉시 게임 탈주 분기로 처리한다.
+- 게임 중 room leave는 disconnect timeout을 기다리지 않고 즉시 파산/방 정리로 실행된다.

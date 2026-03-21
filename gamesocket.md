@@ -902,7 +902,8 @@ last player standing 종료
   "winner": {
     "playerId": 1,
     "nickname": "host",
-    "balance": 610000
+    "balance": 610000,
+    "assets": 610000
   }
 }
 ```
@@ -916,7 +917,8 @@ last player standing 종료
   "winner": {
     "playerId": 1,
     "nickname": "host",
-    "balance": 610000
+    "balance": 300000,
+    "assets": 455000
   }
 }
 ```
@@ -930,10 +932,17 @@ disconnect timeout 종료
   "winner": {
     "playerId": 2,
     "nickname": "guest",
-    "balance": 530000
+    "balance": 530000,
+    "assets": 530000
   }
 }
 ```
+
+메모
+
+- `winner.balance`는 보유 현금이다.
+- `winner.assets`는 `보유 현금 + 소유 땅의 누적 투자금(토지 가격 + 현재 단계까지 건설비)`이다.
+- `max_rounds` 승자는 `winner.assets` 기준으로 결정된다.
 
 ### `PLAYER_DISCONNECTED`
 
@@ -999,3 +1008,18 @@ disconnect timeout 종료
 - `game:sync`는 소켓 핸들러와 runtime이 중복으로 patch를 보내지 않도록 정리되어 있다.
 - turn timer가 발생시킨 자동 prompt 처리 / 자동 턴 종료 patch도 sync replay 대상에 포함된다.
 - 게임 중 socket disconnect가 발생해도 room membership을 자동으로 제거하지 않는다. 대기방(`status=waiting`)일 때만 disconnect 기반 room 정리가 일어난다.
+## 8. Latest Disconnect Notes
+
+- 게임 중 disconnect 감지는 `game:user:{userId}:active`가 없더라도 legacy 매핑 `user:{userId}:game`까지 fallback해서 처리한다.
+- disconnect timeout 만료로 플레이어가 강제 탈락하면 해당 플레이어는 게임 상태뿐 아니라 room 멤버 목록에서도 제거된다.
+- 따라서 로비 `current_players`도 감소해야 하며, host가 나간 경우 남아 있는 첫 번째 플레이어가 새 host가 된다.
+- timeout 후 room 멤버가 0명이면 room 자체가 삭제되고 로비에서는 제거된 방으로 보여야 한다.
+- timeout 정리 시 user game 매핑도 즉시 제거되므로 `GET /api/users/me/context`는 더 이상 해당 사용자를 `playing`으로 복구하지 않는다.
+- 서버 시작 시 기존 `playing` 방들도 재검사한다.
+- 게임 상태가 없는 stale `playing` 방은 즉시 제거하고, 게임 상태가 남아 있는 방은 참가자들에게 disconnect grace를 다시 적용한 뒤 복귀하지 않은 인원만 정리한다.
+- disconnect grace는 60초 기준이고, 실제 강제 정리는 scheduler polling 직후 실행되므로 체감상 약간 더 늦을 수 있다.
+- 찬스 이동 카드(`MOVE_FORWARD`, `MOVE_BACKWARD`)는 `CHANCE_RESOLVED`가 목적지 이동 `PLAYER_MOVED`보다 먼저 오도록 정렬한다.
+- 찬스 이동으로 도착한 목적지 칸도 일반 착지처럼 다시 해석하므로 `LANDED`, 특수칸 처리, 구매/통행료 prompt가 이어질 수 있다.
+- `POST /api/games/{game_id}/leave` 호출 시에는 disconnect timeout을 기다리지 않고 즉시 파산/방 정리가 실행된다.
+- 이 경로로 마지막 1명이 남아 게임이 끝나면 `GAME_OVER.reason`은 `player_left`로 내려간다.
+- 게임 나가기 호출은 `POST /api/rooms/{room_id}/leave`를 기준으로 사용하고, `room.status = playing`이면 즉시 탈주 처리로 분기한다.
